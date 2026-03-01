@@ -38,7 +38,7 @@ const GroupChat = ({ groupId }) => {
 
         // Initialize socket
         // Note: the backend runs on port 5000 in dev
-        const newSocket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000');
+        const newSocket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://leaderboard-uno.onrender.com');
         setSocket(newSocket);
 
         newSocket.emit('joinGroup', groupId);
@@ -97,8 +97,8 @@ const GroupChat = ({ groupId }) => {
                                         {msg.sender?.name}
                                     </span>
                                     <div className={`px-4 py-2 rounded-2xl ${isOwnMessage
-                                            ? 'bg-uno-blue text-white rounded-tr-sm'
-                                            : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-tl-sm'
+                                        ? 'bg-uno-blue text-white rounded-tr-sm'
+                                        : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-tl-sm'
                                         }`}>
                                         <p className="whitespace-pre-wrap word-break">{msg.content}</p>
                                     </div>
