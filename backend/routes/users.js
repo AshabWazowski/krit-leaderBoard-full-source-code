@@ -30,6 +30,36 @@ router.get('/', auth, adminOnly, async (req, res) => {
     }
 });
 
+// Create a new user (Admin only)
+router.post('/', auth, adminOnly, async (req, res) => {
+    try {
+        const { name, email, password, role } = req.body;
+
+        // Check if user exists
+        let user = await User.findOne({ email });
+        if (user) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        user = new User({
+            name,
+            email,
+            password: hashedPassword,
+            role: role || 'Player'
+        });
+
+        await user.save();
+
+        res.status(201).json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+});
+
 // --- PUBLIC/PLAYER ROUTES ---
 
 // Get master leaderboard (top 100 globally)
@@ -61,14 +91,17 @@ router.get('/profile', auth, async (req, res) => {
         // Calculate group-specific data
         const groupStats = joinedGroups.map(group => {
             let membersPoints = [];
-            for (const [userId, points] of group.pointsMap.entries()) {
-                membersPoints.push({ userId, points });
+            // group.pointsMap is a plain object because of .lean()
+            if (group.pointsMap) {
+                for (const [userId, points] of Object.entries(group.pointsMap)) {
+                    membersPoints.push({ userId, points });
+                }
             }
             membersPoints.sort((a, b) => b.points - a.points);
 
             const userEntryIndex = membersPoints.findIndex(m => m.userId.toString() === req.user.id);
             const rank = userEntryIndex !== -1 ? userEntryIndex + 1 : null;
-            const pointsInGroup = group.pointsMap.get(req.user.id) || 0;
+            const pointsInGroup = group.pointsMap ? (group.pointsMap[req.user.id] || 0) : 0;
 
             return {
                 groupId: group._id,

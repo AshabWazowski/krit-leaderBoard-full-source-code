@@ -18,6 +18,8 @@ const GroupDetailsPage = () => {
     const [showAddUserModal, setShowAddUserModal] = useState(false);
     const [allUsers, setAllUsers] = useState([]);
     const [selectedUserIdToAdd, setSelectedUserIdToAdd] = useState('');
+    const [isCreatingNewUser, setIsCreatingNewUser] = useState(false);
+    const [newUserData, setNewUserData] = useState({ name: '', email: '', password: '' });
 
     const fetchGroupData = async () => {
         try {
@@ -82,6 +84,23 @@ const GroupDetailsPage = () => {
             fetchGroupData();
         } catch (err) {
             alert(err.response?.data?.message || 'Error adding player');
+        }
+    };
+
+    const handleCreateAndAddUser = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await api.post('/users', newUserData);
+            const createdUserId = res.data._id;
+
+            await api.post(`/groups/${id}/add-user`, { userId: createdUserId });
+
+            setShowAddUserModal(false);
+            setNewUserData({ name: '', email: '', password: '' });
+            setIsCreatingNewUser(false);
+            fetchGroupData();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Error creating & adding player');
         }
     };
 
@@ -270,34 +289,98 @@ const GroupDetailsPage = () => {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleAddUserToGroup} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-400 mb-2">Select User</label>
-                                    <select
-                                        required
-                                        value={selectedUserIdToAdd}
-                                        onChange={(e) => setSelectedUserIdToAdd(e.target.value)}
-                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-uno-blue focus:ring-1 focus:ring-uno-blue text-white"
-                                    >
-                                        <option value="" disabled>-- Choose a User --</option>
-                                        {allUsers
-                                            .filter(u => !group.leaderboard.map(m => m._id).includes(u._id))
-                                            .map(u => (
-                                                <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
-                                            ))}
-                                    </select>
-                                </div>
+                            {/* Toggle tabs */}
+                            <div className="flex gap-2 mb-6">
+                                <button
+                                    onClick={() => setIsCreatingNewUser(false)}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${!isCreatingNewUser ? 'bg-uno-blue text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                                >
+                                    Existing Player
+                                </button>
+                                <button
+                                    onClick={() => setIsCreatingNewUser(true)}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${isCreatingNewUser ? 'bg-uno-blue text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                                >
+                                    New Player
+                                </button>
+                            </div>
 
-                                <div className="pt-4 flex gap-3">
-                                    <button
-                                        type="submit"
-                                        disabled={!selectedUserIdToAdd}
-                                        className="w-full bg-uno-blue hover:bg-blue-600 disabled:opacity-50 text-white font-medium py-3 rounded-lg transition-all"
-                                    >
-                                        Add Player
-                                    </button>
-                                </div>
-                            </form>
+                            {!isCreatingNewUser ? (
+                                <form onSubmit={handleAddUserToGroup} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">Select User</label>
+                                        <select
+                                            required
+                                            value={selectedUserIdToAdd}
+                                            onChange={(e) => setSelectedUserIdToAdd(e.target.value)}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-uno-blue focus:ring-1 focus:ring-uno-blue text-white"
+                                        >
+                                            <option value="" disabled>-- Choose a User --</option>
+                                            {allUsers
+                                                .filter(u => !group.leaderboard.map(m => m._id).includes(u._id))
+                                                .map(u => (
+                                                    <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
+                                                ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="pt-4 flex gap-3">
+                                        <button
+                                            type="submit"
+                                            disabled={!selectedUserIdToAdd}
+                                            className="w-full bg-uno-blue hover:bg-blue-600 disabled:opacity-50 text-white font-medium py-3 rounded-lg transition-all"
+                                        >
+                                            Add Player
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <form onSubmit={handleCreateAndAddUser} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">Player Name</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={newUserData.name}
+                                            onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-uno-blue focus:ring-1 focus:ring-uno-blue text-white"
+                                            placeholder="John Doe"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">Email</label>
+                                        <input
+                                            type="email"
+                                            required
+                                            value={newUserData.email}
+                                            onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-uno-blue focus:ring-1 focus:ring-uno-blue text-white"
+                                            placeholder="john@example.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">Initial Password</label>
+                                        <input
+                                            type="password"
+                                            required
+                                            value={newUserData.password}
+                                            onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-uno-blue focus:ring-1 focus:ring-uno-blue text-white"
+                                            placeholder="Enter secure password"
+                                        />
+                                    </div>
+
+                                    <div className="pt-4 flex gap-3">
+                                        <button
+                                            type="submit"
+                                            disabled={!newUserData.name || !newUserData.email || !newUserData.password}
+                                            className="w-full bg-uno-green hover:bg-green-600 disabled:opacity-50 text-white font-medium py-3 rounded-lg transition-all"
+                                        >
+                                            Create & Add Player
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
                         </motion.div>
                     </div>
                 )}

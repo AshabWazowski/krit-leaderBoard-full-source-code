@@ -38,7 +38,7 @@ const GroupChat = ({ groupId }) => {
 
         // Initialize socket
         // Note: the backend runs on port 5000 in dev
-        const newSocket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://leaderboard-uno.onrender.com');
+        const newSocket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000');
         setSocket(newSocket);
 
         newSocket.emit('joinGroup', groupId);
